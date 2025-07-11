@@ -257,9 +257,12 @@ class HangPictureTask(PrimitiveTask):
         target_nail = self.config_manager.target_nail
         nail_pos = np.array(self.entities[target_nail].get_xpos(physics))
         skill_sequence = [
-            partial(SkillLib.pick, target_entity_name=target_entity, prior_eulers=[[-np.pi, 0, 0]]),
-            partial(SkillLib.lift, gripper_state=np.zeros(2)),
-            partial(SkillLib.moveto, nail_pos+np.array([0.01, -0.1, 0.02]), target_quat=euler_to_quaternion(-np.pi/2, 0, 0), gripper_state=np.zeros(2)),
-            partial(SkillLib.moveto, nail_pos+np.array([0.01, -0.1, 0.02]), target_quat=euler_to_quaternion(-np.pi/2, 0, 0), gripper_state=np.zeros(2))
+            partial(SkillLib.pick, target_entity_name=target_entity, prior_eulers=[[-np.pi, 0, 0]], openness=0.02),
+            partial(SkillLib.lift, gripper_state=np.zeros(2), lift_height=0.2),
+            partial(SkillLib.moveto, target_pos=nail_pos+np.array([0.01, -0.1, 0.02]), target_quat=euler_to_quaternion(-np.pi/2, 0, 0), gripper_state=np.zeros(2)),
+            partial(SkillLib.moveto, target_pos=nail_pos+np.array([0.01, -0.1, 0.02]), target_quat=euler_to_quaternion(-np.pi/2, 0, 0), gripper_state=np.zeros(2)),
+            # partial(SkillLib.moveto, target_pos=nail_pos+np.array([0.01, -0.1, 0.02]), target_quat=euler_to_quaternion(-np.pi/2, 0, 0), gripper_state=np.zeros(2)),
+            # partial(SkillLib.moveto, target_pos=nail_pos+np.array([0.01, -0.1, 0.02]), target_quat=euler_to_quaternion(-np.pi/2, 0, 0), gripper_state=np.zeros(2)),
+            partial(SkillLib.open_gripper)
         ]
         return skill_sequence

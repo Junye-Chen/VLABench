@@ -20,11 +20,13 @@ def get_object_list(xml_dir, all=True, seen=True):
             xml_paths.append(os.path.join(xml_dir, subdir))
         elif os.path.isdir(os.path.join(xml_dir, subdir)):
             xml_paths.extend(get_object_list(os.path.join(xml_dir, subdir)))
-    if all: xml_paths = xml_paths
+    if all: 
+        xml_paths = xml_paths
     else:
         if seen: xml_paths = xml_paths[:len(xml_paths)//2]
         else: xml_paths = xml_paths[len(xml_paths)//2:]
     split_xml_paths = [xml_path.split("assets/")[-1] for xml_path in xml_paths]
+
     return sorted(split_xml_paths)
 
 # name2config = {
@@ -306,3 +308,10 @@ for key, value in name2class_xml.items():
     additional_dict[key+"_seen"] = [value[0], value[1][:len(value[1])//2]]
     additional_dict[key+"_unseen"] = [value[0], value[1][len(value[1])//2:]]
 name2class_xml.update(additional_dict)
+
+
+
+if __name__ == "__main__":
+    print(xml_root)
+    xml_root = os.path.join(xml_root, "obj")
+    print(len(get_object_list(xml_root)))

@@ -23,6 +23,7 @@ def rrt_motion_planning(start_pos,
                         retry_time=0,
             ):
     """
+    ! 这个只考虑了末端运动的碰撞,没有考虑机械arm本身和环境的碰撞
     3d rrt motion planning for robot arm.
     Input: 
         start_pos: tuple, (3,)
@@ -60,7 +61,7 @@ def rrt_motion_planning(start_pos,
     elif smooth_method == "polynomial":
         path_arr = polynomial_smoothing(path)
         path = [tuple(p) for p in path_arr]
-    return path
+    return path  # 三元组结果,点列表
 
 def rrt_star(start_pos, 
              end_pos, 

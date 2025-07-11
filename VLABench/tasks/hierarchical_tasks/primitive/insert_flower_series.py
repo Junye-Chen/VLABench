@@ -111,7 +111,8 @@ class InsertFlowerTask(PrimitiveTask):
             partial(SkillLib.pick, target_entity_name=self.target_entity),
             partial(SkillLib.lift, target_quat=euler_to_quaternion(-np.pi/2, -np.pi/2, 0)),
             partial(SkillLib.moveto, target_pos=target_place_point, target_quat=euler_to_quaternion(-np.pi/2, -np.pi/2, 0)),
-            partial(SkillLib.lift, lift_height=-0.2)
+            partial(SkillLib.lift, lift_height=-0.2),
+            partial(SkillLib.open_gripper)
         ]
         return skill_sequence
         

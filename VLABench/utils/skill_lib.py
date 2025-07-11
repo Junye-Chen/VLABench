@@ -7,6 +7,17 @@ from VLABench.utils.utils import find_keypoint_and_prepare_grasp, distance, quat
 from VLABench.algorithms.motion_planning.rrt import rrt_motion_planning
 from VLABench.algorithms.utils import interpolate_path, qauternion_slerp
 
+# CuRobo
+from curobo.geom.types import WorldConfig
+from curobo.rollout.rollout_base import Goal
+from curobo.types.base import TensorDeviceType
+from curobo.types.math import Pose
+from curobo.types.robot import JointState, RobotConfig
+from curobo.util_file import get_robot_configs_path, get_world_configs_path, join_path, load_yaml
+from curobo.wrap.reacher.ik_solver import IKSolver, IKSolverConfig
+from curobo.wrap.reacher.trajopt import TrajOptSolver, TrajOptSolverConfig
+
+
 PRIOR_EULERS = [[np.pi, 0, np.pi/2], # face down, horizontal
                 [np.pi, 0, 0], # face down, vertical
                 [-np.pi/2, -np.pi/2, 0], # face forward, horizontal
@@ -41,11 +52,13 @@ class SkillLib:
         stage_success = False
         task_success = False
         for i, (point, quat) in enumerate(zip(points, quats)):
+            # ! 逆向运动学求解
             success, action = env.robot.get_qpos_from_ee_pos(physics=env.physics, pos=point, quat=quat)
             # if not success: # a wrong action beyond the embodied limit
             #     return None, None, False, False
             action = np.concatenate([action, gripper_state])
             waypoint = np.concatenate([point, quaternion_to_euler(quat), gripper_state])
+
             for _ in range(max_n_substep):
                 timestep = env.step(action)
                 if timestep.last():
@@ -60,9 +73,11 @@ class SkillLib:
             obs = env.get_observation()
             observations.append(obs)
             waypoints.append(waypoint) 
+
         assert len(observations) == len(waypoints), f"observations and waypoints should have the same length, {len(observations)} and {len(waypoints)}"
         if distance(points[-1], env.robot.get_end_effector_pos(env.physics)) < tolerance:
             stage_success = True
+
         return observations, waypoints, stage_success, task_success
             
     @staticmethod
@@ -73,6 +88,8 @@ class SkillLib:
                gripper_state=None,
                **kwargs
                ):
+        print('move...')
+        # print("DEBUG moveto env type:", type(env))
         start_pos, start_quat = env.robot.get_end_effector_pos(env.physics), env.robot.get_end_effector_quat(env.physics)
         observations = [env.get_observation()]
         waypoints = []
@@ -122,6 +139,7 @@ class SkillLib:
              prior_eulers=PRIOR_EULERS, 
              specific_keypoint=None,
              target_velocity=0.05,
+             openness=0.04,
              motion_planning_kwargs=dict(),
              **kwargs):
         """
@@ -138,6 +156,7 @@ class SkillLib:
             waypoints: list of waypoints
             key_frames: list of key action such as move to prepare point, grasp
         """
+        print('pick...')
         target_entity = env.task.entities[target_entity_name]
         if target_pos is None or target_quat is None:
             key_pos, prepare_key_pos, key_quat = find_keypoint_and_prepare_grasp(env, target_entity, prior_eulers, specific_keypoint_id=specific_keypoint, move_vector=prepare_quat)
@@ -151,22 +170,33 @@ class SkillLib:
             else:
                 move_quat = prepare_quat
             prepare_key_pos = key_pos + move_quat * prepare_distance
+            
         start_pos, start_quat = env.robot.get_end_effector_pos(env.physics), env.robot.get_end_effector_quat(env.physics)
         # env_pcd = env.get_observation()["masked_point_cloud"]
         # obstacle_pcd = np.asarray(env_pcd.points)
+        # print(start_pos, start_quat)
+        # pos, quat, open = env.robot.get_ee_state(env.physics)
+        # print(env.robot.get_ee_state(env.physics))
 
+        # 环境障碍
         obstacle_pcd = np.asarray(env.get_obstacle_pcd().points)
+        print('obstacle_pcd', obstacle_pcd.shape)
+        # todo 点云转成mesh输入
+
 
         start_pos, start_quat, key_quat, prepare_pos, key_pos = np.array(start_pos), np.array(start_quat), np.array(key_quat), np.array(prepare_key_pos), np.array(key_pos)
         # motion planning -> path(start, prepare_point) & path(prepare_point, key_point)
+        # 路线规划
         init2prepare_path = rrt_motion_planning(tuple(start_pos), 
                                                 tuple(prepare_pos), 
                                                 obstacle_pcd,
                                                 **motion_planning_kwargs)
-        if init2prepare_path is None:
+        
+        if init2prepare_path is None:  # 如果规划失败，则用直线连接。
             init2prepare_path = [start_pos, prepare_pos]
         quats_in_path = [start_quat for _ in range(len(init2prepare_path)-1)]
         quats_in_path.append(key_quat)
+
         # quats_in_path = []
         # for t in np.linspace(0, 1, len(init2prepare_path), endpoint=False):
         #     quats_in_path.append(qauternion_slerp(start_quat, key_quat, t))
@@ -174,25 +204,30 @@ class SkillLib:
         path = np.array(init2prepare_path)
         quats_in_path.append(key_quat)
         
+        # todo 这里输入的path是个什么格式的,内容是什么
         interplate_path, interplate_quat = interpolate_path(path, quats_in_path, target_velocity)
         waypoints = []
         stage_success = False
         task_success = False
         observations = [env.get_observation()]
         # move along the interplated path
-        gripper_state = np.ones(2) * 0.04
+        gripper_state = np.ones(2) * openness
+
+        # todo 这里面实行了ik? 返回的是什么
         new_obs, new_waypoints, _, task_success = SkillLib.step_trajectory(env, 
-                                                                   interplate_path, 
-                                                                   interplate_quat, 
-                                                                   gripper_state,
-                                                                   **kwargs)
+                                                                            interplate_path, 
+                                                                            interplate_quat, 
+                                                                            gripper_state,
+                                                                            **kwargs)
         observations.extend(new_obs)
         waypoints.extend(new_waypoints)
+
         if task_success:
             observations.pop(-1)
             return observations, waypoints, True, task_success
+        
         # grasp
-        new_obs, new_waypoints, _, task_success = SkillLib.close_gripper(env)
+        new_obs, new_waypoints, _, task_success = SkillLib.close_gripper(env, openness=openness)
         observations.extend(new_obs)
         waypoints.extend(new_waypoints)
         
@@ -200,6 +235,7 @@ class SkillLib:
         assert len(observations) == len(waypoints), f"observations and waypoints should have the same length, {len(observations)} and {len(waypoints)}"
         if env.task.entities[target_entity_name].is_grasped(env.physics, env.robot):
             stage_success = True
+
         return observations, waypoints, stage_success, task_success
     
     @staticmethod
@@ -219,6 +255,7 @@ class SkillLib:
             waypoints: list of actions
             key_frame: list of key action such as move to prepare point, grasp
         """
+        print("place...")
         target_container = env.task.entities[target_container_name]
         start_pos, start_quat = env.robot.get_end_effector_pos(env.physics), env.robot.get_end_effector_quat(env.physics)
         if target_pos is None:
@@ -436,6 +473,7 @@ class SkillLib:
         """
         Common pull function.
         """
+        print('pull...')
         start_pos, start_quat = env.robot.get_end_effector_pos(env.physics), env.robot.get_end_effector_quat(env.physics)
         if target_pos is None: target_pos = np.array(start_pos) + np.array([0, -pull_distance, 0])
         if target_quat is None: target_quat = start_quat
@@ -459,6 +497,7 @@ class SkillLib:
     
     @staticmethod
     def push(env, target_pos=None, target_quat=None, gripper_state=None, push_distance=0.3):
+        print('push...')
         obs, waypoints, stage_success, task_success = SkillLib.pull(env, target_pos, target_quat, gripper_state, -push_distance)
         return obs, waypoints, stage_success, task_success
     
@@ -507,6 +546,8 @@ class SkillLib:
         """
         Common lift function.
         """
+        print('lift...')
+        # print("DEBUG lift env type:", type(env))
         start_pos, start_quat = env.robot.get_end_effector_pos(env.physics), env.robot.get_end_effector_quat(env.physics)
         if target_pos is None: 
             target_pos = np.array(start_pos) + np.array([0, 0, lift_height])
@@ -515,6 +556,7 @@ class SkillLib:
         interplate_path, interplate_quat = interpolate_path([start_pos, target_pos], [np.array(start_quat), np.array(target_quat)])
         observations = [env.get_observation()]
         waypoints = []
+        # print("DEBUG lift env type:", type(env))
         if gripper_state is None:
             gripper_closed = env.robot.get_ee_open_state(env.physics)
             if gripper_closed: gripper_state = np.zeros(2)
@@ -527,6 +569,7 @@ class SkillLib:
         waypoints.extend(new_waypoints)
         observations.pop(-1)
         assert len(observations) == len(waypoints), f"observations and waypoints should have the same length, {len(observations)} and {len(waypoints)}"
+        # print("DEBUG lift env type:", type(env))
         return observations, waypoints, stage_success, task_success
     
     @staticmethod
@@ -550,15 +593,45 @@ class SkillLib:
         assert len(observations) == len(waypoints), f"observations and waypoints should have the same length, {len(observations)} and {len(waypoints)}"
         return observations, waypoints, True, False
         
-    
     @staticmethod
-    def close_gripper(env, repeat=1):
+    def set_gripper(env, openness=0.04, repeat=1):
+        qpos = np.array(env.robot.get_qpos(env.physics)).reshape(-1)
+        observations = [env.get_observation()]
+        waypoints = []
+        success = False
+
+        gripper_state = np.ones(2) * openness  # openness为你想要的开度
+        action = np.concatenate([qpos, gripper_state])
+
+        for _ in range(repeat):
+            timestep = env.step(action)
+            if timestep.last():
+                success = True
+                obs = env.get_observation()
+                observations.append(obs)
+                waypoints.append(np.concatenate([env.robot.get_end_effector_pos(env.physics),
+                                            quaternion_to_euler(env.robot.get_end_effector_quat(env.physics)),
+                                            gripper_state]))
+                break
+        obs = env.get_observation()
+        observations.append(obs)
+        waypoints.append(np.concatenate([env.robot.get_end_effector_pos(env.physics),
+                                            quaternion_to_euler(env.robot.get_end_effector_quat(env.physics)),
+                                            gripper_state]))
+            
+        observations.pop(-1)
+        assert len(observations) == len(waypoints), f"observations and waypoints should have the same length, {len(observations)} and {len(waypoints)}"
+        return observations, waypoints, True, success
+    
+
+    @staticmethod
+    def close_gripper(env, openness=0.04, repeat=1):
         qpos = np.array(env.robot.get_qpos(env.physics)).reshape(-1)
         observations = [env.get_observation()]
         waypoints = []
         success = False
         for i in range(10):
-            gripper_state = np.ones(2) * (0.04 - i * 0.04/10)
+            gripper_state = np.ones(2) * (openness - i * openness/10)
             action = np.concatenate([qpos, gripper_state])
             for _ in range(repeat):
                 timestep = env.step(action)
@@ -581,14 +654,14 @@ class SkillLib:
         return observations, waypoints, True, success
     
     @staticmethod
-    def open_gripper(env, repeat=1):
+    def open_gripper(env, openness=0.04, repeat=1):
         qpos = np.array(env.robot.get_qpos(env.physics)).reshape(-1)
         observations = [env.get_observation()]
         waypoints = []
         task_success = False
         stage_success = False
         for i in range(10):
-            gripper_state = np.ones(2) * (i+1)/10 * 0.04
+            gripper_state = np.ones(2) * (i+1)/10 * openness
             action = np.concatenate([qpos, gripper_state])
             for _ in range(repeat):
                 timestep = env.step(action)

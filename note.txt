@@ -1,0 +1,101 @@
+Select Fruit
+Select Drink
+Select Toy
+Select Book
+Select Ingredient
+Insert Flower
+Add Condiment
+Put Box on Famous Painting
+Pick ChemistryTube
+Select Poker
+Select Mahjong
+Select Billiards
+Hammer Loose Nail
+Select Fruit-Spatial
+Select Drink-Spatial
+Select Toy-Spatial
+Select Book-Spatial
+Select Ingredient-Spatial
+Insert Flower-Spatial
+Add Condiment-Spatial
+Hang Picture
+Pick ChemistryTube-Spatial.
+Select Poker-Spatial
+Select Mahjong-Spatial
+Put Billiards in Pocket
+Select Fruit with Common Sense
+Select Drink with Common Sense
+Select Toy with Common Sense
+Select Book with Common Sense
+Select Ingredient with Common Sense
+Insert Flower with Common Sense
+Insert Bloomed Flower
+Add Condiments with Common Sense
+Select Painting with Common Sense
+Pick Chemistry Tube with Common Sense
+Select nth Largest Poker
+Select Unique Mahjong
+Select Billiards with Common Sense
+Select Fruit-Semantic
+Select Drink-Semantic
+Select Toy-Semantic
+Select Book-Semantic
+Select Ingredient-Semantic
+Insert Flower-Semantic
+Add Condiment-Semantic
+Select Painting-Semantic
+Select ChemistryTube-Semantic
+Simple Poker Play
+Simple Mahjong Play
+Simple Snooker Play
+Friction QA
+Density QA
+Magnetism QA
+Weight QA
+Thermal Expansion QA
+Speed of Sound QA
+Specular Reflection QA
+Drag Force QA
+Basic Seesaw Usage
+Strike Billiards
+Take Chemistry Experiment
+Find Unseen Object
+Find Unseen Object without Telling Find
+Make Juice with Juicer
+Find Fruit to Make Juice
+Plug-in Power Cord to Make Juice
+Take out Cool Drink
+No Drink in Fridge & Refrigerate Drink
+Wrap Proper Toy as Gift
+Rearrange Books by Year
+Rearrange Books by Author Name
+Classify the Books
+Cook Dishes Following Menu
+Store Proper Food
+Heat Food with Microwave
+Plug-in Power Cord to Heat Food
+Replace Wilted Flower and Drop
+Find Condiment and Add to Dish
+Hammer Nail &Hang Picture
+Assemble Hammer &Hammer Nail
+Rearrange Chemistry Tube
+Texas Holdem Play
+Flip Facing-downs &Play Texas Holdem
+Play Mahjong
+Flip Facing-downs &Play Mahjong
+Leverage SeeSaw to Grasp Target
+Find Weights to Leverage SeeSaw
+Get Black Coffee
+Get Sweet Coffee
+Get Latte Coffee
+Set Dining Table by Menu
+Set Dining Table Left-Handed
+Play Snooker
+Cluster Toy
+Classify Desserts
+Setup Study Table
+Organize Study Table
+Math Game
+Art Game
+Cluster Beverage
+

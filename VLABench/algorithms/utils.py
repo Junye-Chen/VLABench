@@ -40,6 +40,7 @@ def qauternion_slerp(start_quat, end_quat, t):
 
 def interpolate_path(positions, quaternions, target_velocity=0.05):
     """
+        ! 只是个插值函数,不用管
         Perform smooth interpolation on an RRT-generated path, including both positions and quaternions.
 
         Parameters:

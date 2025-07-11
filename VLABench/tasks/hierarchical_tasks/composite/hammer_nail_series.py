@@ -207,7 +207,7 @@ class HammerNailandHangPictureTask(HangPictureTask):
             partial(SkillLib.push, push_distance=0.15, gripper_state=np.zeros(2)),
             partial(SkillLib.place, target_container_name="counter", target_pos=np.array([0, 0.25, 0.8]), target_quat=euler_to_quaternion(-np.pi, 0, 0)),
             partial(SkillLib.lift, lift_height=0.1),
-            partial(SkillLib.pick, target_entity_name=target_entity, target_pos=grasppoint+np.array([0, 0.01, 0.]), target_quat=euler_to_quaternion(-np.pi, 0, 0)),
+            partial(SkillLib.pick, target_entity_name=target_entity, target_pos=grasppoint+np.array([0, 0.01, 0.]), target_quat=euler_to_quaternion(-np.pi, 0, 0), openness=0.02),
             partial(SkillLib.lift, gripper_state=np.zeros(2)),
             partial(SkillLib.moveto, target_pos=nail_pos+np.array([0.01, -0.1, 0.02]), target_quat=euler_to_quaternion(-np.pi/2, 0, 0), gripper_state=np.zeros(2)),
             partial(SkillLib.push, push_distance=0.1, target_quat=euler_to_quaternion(-np.pi/2, 0, 0), gripper_state=np.zeros(2))

@@ -1,13 +1,16 @@
-N_SAMPLE=10
+#!/bin/bash
+
+N_SAMPLE=5
 OFFSET=0
- 
-task_names=("select_toy" "select_fruit" ) # add more task here
-save_dir="/Your/path/to/trajectory/dataset"
+
+# hang_picture_on_specific_nail
+task_names=("select_drink_common_sense")  # add more task here "select_fruit"
+save_dir="dataset/trajectory"
 
 for task_name in "${task_names[@]}"; do # add more process here
     commands=(
         "python scripts/trajectory_generation.py --task-name $task_name --n-sample $N_SAMPLE --start-id $((0 * N_SAMPLE + OFFSET)) --save-dir $save_dir"
-        "python scripts/trajectory_generation.py --task-name $task_name --n-sample $N_SAMPLE --start-id $((1 * N_SAMPLE + OFFSET)) --save-dir $save_dir"
+        # "python scripts/trajectory_generation.py --task-name $task_name --n-sample $N_SAMPLE --start-id $((1 * N_SAMPLE + OFFSET)) --save-dir $save_dir"
     )
 
     echo "Running tasks for: $task_name"
@@ -22,3 +25,7 @@ for task_name in "${task_names[@]}"; do # add more process here
 done
 
 echo "All processes for all tasks have completed."
+
+for task_name in "${task_names[@]}"; do
+    vlc dataset/trajectory/${task_name}/demo_${OFFSET}_success_True.mp4 &
+done

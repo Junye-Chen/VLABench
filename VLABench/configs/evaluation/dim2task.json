@@ -9,7 +9,6 @@
         "add_condiment",
         "insert_flower",
         "select_chemistry_tube"
-
     ],
     "Spatial":[
         "select_fruit_spatial",

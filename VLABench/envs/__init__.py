@@ -38,6 +38,7 @@ def load_env(task,
     default_config.update(specific_config)
     if config is not None and isinstance(config, dict):
         default_config.update(config)
+        
     # load and update robot config first and then load robot entity
     robot_config = ROBOT_CONFIG.get(robot, None)
     assert robot_config is not None, f"robot {robot} is not supported"
@@ -48,4 +49,5 @@ def load_env(task,
     task = register.load_task(task)(task, robot, episode_config=episode_config, random_init=random_init, **kwargs)
     env = LM4ManipDMEnv(task=task, time_limit=time_limit, reset_wait_step=reset_wait_step)
     env.reset()
+    
     return env

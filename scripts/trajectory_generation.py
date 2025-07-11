@@ -46,7 +46,7 @@ def get_all_hdf5_files(directory):
 
 def generate_trajectory(args, index, logger):
     env = load_env(args.task_name, robot=args.robot, eval=args.eval_unseen)
-    env.reset()
+    # env.reset()
     episode_config = env.save()
     
     # load key prior information and task specific variables
@@ -60,22 +60,29 @@ def generate_trajectory(args, index, logger):
     
     # register the expert sequence
     skill_seq = env.get_expert_skill_sequence()
+    # print(skill_seq)
 
     # start auto trajectory generation
     observations, waypoints= [], []
+    # print("DEBUG env type:", type(env))
     if skill_seq is not None: # normal case
         for skill in skill_seq:
+            # print("DEBUG env type:", type(env))
             obs, waypoint, stage_success, task_success = skill(env)
+            print('stage_success', stage_success, 'task_success', task_success)
             if args.debug:
-                for o in obs: observations.append(dict(rgb=o["rgb"]))
+                for o in obs: 
+                    observations.append(dict(rgb=o["rgb"]))
             else:
                 observations.extend(obs)
                 waypoints.extend(waypoint)
+
             if args.early_stop and not stage_success:
                 logger.warning(f"{skill} failed, early quit...")
                 break
             if task_success:
                 break
+
     else: # TODO: some special tasks should be handled based on the feedback
         raise NotImplementedError("No expert skill sequence found")
     
@@ -87,10 +94,10 @@ def generate_trajectory(args, index, logger):
         if not os.path.exists(task_dir):
             os.makedirs(task_dir)
         mediapy.write_video(os.path.join(task_dir, f"demo_{index}_success_{task_success}.mp4"), 
-                            frames, fps=10) 
+                            frames, fps=25) 
     if not task_success:
         logger.warning("Task failed, skip saving data")
-        return
+        return task_success
     else:
         logger.info("Task success, saving data")
     
@@ -109,11 +116,14 @@ def generate_trajectory(args, index, logger):
                      filename=f"data_{index}.hdf5",
                      )
     env.close()
+    return task_success
     
         
 if __name__ == "__main__":
     args = get_args()
     logger = get_logger()
+    flag = False
+
     for i in tqdm(range(args.n_sample)):
         i += args.start_id
         try:
@@ -121,8 +131,19 @@ if __name__ == "__main__":
             if len(h5_files) >= args.max_episode:
                 logger.info(f"Task {args.task_name} has reached the maximum episode number, skip")
                 break
-            generate_trajectory(args, i, logger)
+            while True:
+                flag = generate_trajectory(args, i, logger)
+                if flag:
+                    break
+
         except Exception as e:
             err = traceback.TracebackException.from_exception(e)
             print("".join(err.format()))
             continue
+
+"""
+python scripts/trajectory_generation.py --task-name select_toy --n-sample 1 --start-id 40 --save-dir "dataset/trajectory"
+
+python scripts/trajectory_generation.py --task-name add_condiment --n-sample 1 --start-id 0 --save-dir "dataset/trajectory"
+
+"""
